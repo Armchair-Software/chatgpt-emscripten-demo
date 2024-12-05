@@ -128,7 +128,7 @@ void webgpu_renderer::init(std::function<void(webgpu_data const&)> &&this_postin
 
         // specify required features for the device
         std::set<wgpu::FeatureName> required_features{
-          wgpu::FeatureName::Depth32FloatStencil8,
+          // requesting nothing in this simple imgui-focused demo
         };
         std::set<wgpu::FeatureName> desired_features{
           // requesting nothing in this simple imgui-focused demo
@@ -324,37 +324,6 @@ void webgpu_renderer::init_swapchain() {
   webgpu.swapchain = webgpu.device.CreateSwapChain(webgpu.surface, &swapchain_descriptor);
 }
 
-void webgpu_renderer::init_depth_texture() {
-  /// Create or recreate the depth buffer and its texture view
-  {
-    wgpu::TextureDescriptor depth_texture_descriptor{
-      .label{"Depth texture 1"},
-      .usage{wgpu::TextureUsage::RenderAttachment},
-      .dimension{wgpu::TextureDimension::e2D},
-      .size{
-        window.viewport_size.x,
-        window.viewport_size.y,
-        1
-      },
-      .format{webgpu.depth_texture_format},
-      .viewFormatCount{1},
-      .viewFormats{&webgpu.depth_texture_format},
-    };
-    webgpu.depth_texture = webgpu.device.CreateTexture(&depth_texture_descriptor);
-  }
-  {
-    wgpu::TextureViewDescriptor depth_texture_view_descriptor{
-      .label{"Depth texture view 1"},
-      .format{webgpu.depth_texture_format},
-      .dimension{wgpu::TextureViewDimension::e2D},
-      .mipLevelCount{1},
-      .arrayLayerCount{1},
-      .aspect{wgpu::TextureAspect::DepthOnly},
-    };
-    webgpu.depth_texture_view = webgpu.depth_texture.CreateView(&depth_texture_view_descriptor);
-  }
-}
-
 void webgpu_renderer::wait_to_configure_loop() {
   /// Check if initialisation has completed and the WebGPU system is ready for configuration
   /// Since init occurs asynchronously, some emscripten ticks are needed before this becomes true
@@ -401,9 +370,6 @@ void webgpu_renderer::configure() {
   logger << "WebGPU acquiring queue";
   webgpu.queue = webgpu.device.GetQueue();
 
-  logger << "WebGPU creating depth texture";
-  init_depth_texture();
-
   emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, false,   // target, userdata, use_capture, callback
     ([](int /*event_type*/, EmscriptenUiEvent const *event, void *data) {       // event_type == EMSCRIPTEN_EVENT_RESIZE
       auto &renderer{*static_cast<webgpu_renderer*>(data)};
@@ -411,7 +377,6 @@ void webgpu_renderer::configure() {
       renderer.window.viewport_size.y = static_cast<unsigned int>(event->windowInnerHeight);
 
       renderer.init_swapchain();
-      renderer.init_depth_texture();
       return true;                                                              // the event was consumed
     })
   );
@@ -437,17 +402,10 @@ void webgpu_renderer::draw() {
         .storeOp{wgpu::StoreOp::Store},
         .clearValue{wgpu::Color{0, 0.5, 0.5, 1.0}},
       };
-      wgpu::RenderPassDepthStencilAttachment render_pass_depth_stencil_attachment{
-        .view{webgpu.depth_texture_view},
-        .depthLoadOp{wgpu::LoadOp::Clear},
-        .depthStoreOp{wgpu::StoreOp::Store},
-        .depthClearValue{1.0f},
-      };
       wgpu::RenderPassDescriptor render_pass_descriptor{
         .label{"Render pass 1"},
         .colorAttachmentCount{1},
         .colorAttachments{&render_pass_colour_attachment},
-        .depthStencilAttachment{&render_pass_depth_stencil_attachment},
       };
       wgpu::RenderPassEncoder render_pass_encoder{command_encoder.BeginRenderPass(&render_pass_descriptor)};
 

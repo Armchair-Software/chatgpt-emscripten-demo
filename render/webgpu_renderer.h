@@ -17,15 +17,10 @@ public:
     wgpu::Adapter adapter;                                                      // WebGPU adapter once it has been acquired
     wgpu::Device device;                                                        // WebGPU device once it has been acquired
     wgpu::Queue queue;                                                          // the queue for this device, once it has been acquired
-    wgpu::BindGroupLayout bind_group_layout;                                    // layout for the uniform bind group
 
     wgpu::SwapChain swapchain;                                                  // the swapchain providing a texture view to render to
 
-    wgpu::Texture depth_texture;                                                // depth buffer
-    wgpu::TextureView depth_texture_view;
-
     wgpu::TextureFormat surface_preferred_format{wgpu::TextureFormat::Undefined}; // preferred texture format for this surface
-    static constexpr wgpu::TextureFormat depth_texture_format{wgpu::TextureFormat::Depth24Plus}; // what format to use for the depth texture
 
   private:
     webgpu_data() = default;
@@ -50,7 +45,6 @@ public:
 
 private:
   void init_swapchain();
-  void init_depth_texture();
 
   void wait_to_configure_loop();
   void configure();
