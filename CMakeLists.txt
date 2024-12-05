@@ -56,6 +56,9 @@ elseif(build_type STREQUAL "release")
     # debugging disabled
     -g0
   )
+  set(opt_and_debug_compile_definitions
+    IMGUI_DISABLE_DEBUG_TOOLS
+  )
 else()
   message(FATAL_ERROR "Invalid build type \"${CMAKE_BUILD_TYPE}\"")
 endif()
@@ -119,6 +122,7 @@ add_compile_definitions(
   IMGUI_IMPL_OPENGL_NO_RESTORE_STATE
   NO_BLOB_LOADER
   LOGSTORM_SINGLE_THREADED
+  ${opt_and_debug_compile_definitions}
   ${exception_compile_definitions}
 )
 
