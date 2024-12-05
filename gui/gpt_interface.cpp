@@ -19,6 +19,15 @@ enum class readystate : unsigned short {                                        
   done,
 };
 
+struct message_type {
+  enum class roles {
+    system,
+    user,
+    assistant,
+  } role{roles::user};
+  std::string text{};
+};
+
 void gpt_interface::draw() {
   /// Draw the interface window
   if(!ImGui::Begin("Chat")) {
@@ -33,6 +42,16 @@ void gpt_interface::draw() {
 
   static std::expected<std::vector<std::string>, std::string> model_list_result;
   static std::vector<std::string const>::iterator model_selected{model_list_result->end()};
+
+  static std::vector<message_type> messages{
+    {
+      .role{message_type::roles::system},
+      .text{"You are a helpful assistant..."},
+    },
+    {
+      .role{message_type::roles::user},
+    },
+  };
 
   ImGui::InputText("OpenAI API key", &api_key);
   // TODO: accept paste
@@ -140,6 +159,26 @@ void gpt_interface::draw() {
           if(is_selected) ImGui::SetItemDefaultFocus();
         }
         ImGui::EndCombo();
+      }
+
+      if(model_selected != model_list.end()) {
+
+        int imgui_id{0};
+        for(auto &message : messages) {
+          ImGui::PushID(++imgui_id);
+          if(ImGui::BeginCombo("Role", std::string{magic_enum::enum_name(message.role)}.c_str())) {
+            for(auto const &[this_role, role_name] : magic_enum::enum_entries<message_type::roles>()) {
+              bool const is_selected{this_role == message.role};
+              if(ImGui::Selectable(std::string{role_name}.c_str(), is_selected)) {
+                message.role = this_role;
+              }
+              if(is_selected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+          }
+          ImGui::InputTextMultiline("Message", &message.text);
+          ImGui::PopID();
+        }
       }
     }
   } catch(std::bad_expected_access<std::string> const &e) {
