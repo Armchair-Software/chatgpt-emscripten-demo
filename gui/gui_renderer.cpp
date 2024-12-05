@@ -26,11 +26,13 @@ void gui_renderer::init(ImGui_ImplWGPU_InitInfo &imgui_wgpu_info) {
   ImGui_ImplEmscripten_Init();
 }
 
-void gui_renderer::draw() const {
+void gui_renderer::draw() {
   /// Render the top level GUI
   ImGui_ImplWGPU_NewFrame();
   ImGui_ImplEmscripten_NewFrame();
   ImGui::NewFrame();
+
+  gpt.draw();
 
   ImGui::ShowDemoWindow();
 

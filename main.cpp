@@ -1,5 +1,6 @@
 #include <iostream>
 #include <emscripten/html5.h>
+#include <emscripten/fetch.h>
 #include <imgui/imgui_impl_wgpu.h>
 #include "logstorm/logstorm.h"
 #include "gui/gui_renderer.h"
