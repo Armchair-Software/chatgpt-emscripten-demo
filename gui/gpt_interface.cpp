@@ -60,8 +60,7 @@ void gpt_interface::draw() {
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
     std::strcpy(attr.requestMethod, "GET");
-    ///attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
-    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_REPLACE;
+    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_REPLACE; // using REPLACE without PERSIST_FILE skips querying IndexedDB
     std::string header_auth{"Bearer " + api_key};
     const char* c_headers[] = {"Authorization", header_auth.c_str(), nullptr};
     //attr.requestHeaders = c_headers.data();
