@@ -7,6 +7,8 @@
 #include <nlohmann/json.hpp>
 #include <magic_enum/magic_enum.hpp>
 
+using namespace std::string_literals;
+
 namespace gui {
 
 enum class readystate : unsigned short {                                        // from include/emscripten/fetch.h
@@ -30,6 +32,7 @@ void gpt_interface::draw() {
   static std::optional<uint64_t> download_bytes_total{};
 
   static std::expected<std::vector<std::string>, std::string> model_list_result;
+  static std::vector<std::string const>::iterator model_selected{model_list_result->end()};
 
   ImGui::InputText("OpenAI API key", &api_key);
   // TODO: accept paste
@@ -59,8 +62,10 @@ void gpt_interface::draw() {
     std::strcpy(attr.requestMethod, "GET");
     attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_REPLACE; // using REPLACE without PERSIST_FILE skips querying IndexedDB
     attr.requestHeaders = c_headers.data();
+    ///attr.requestData = nullptr;
     attr.userData = this;
     attr.onsuccess = [](emscripten_fetch_t *fetch){
+      // TODO: free requestData here
       std::cout << "DEBUG onsuccess start" << std::endl;
       std::cout << "DEBUG onsuccess: id " << fetch->id << std::endl;
       std::cout << "DEBUG onsuccess: userData " << fetch->userData << std::endl;
@@ -86,13 +91,19 @@ void gpt_interface::draw() {
         model_list_result = std::unexpected{std::string{"Failed to parse model list: "} + e.what()};
       }
       std::sort(model_list_result->begin(), model_list_result->end());
+      model_selected = model_list_result->end();
+
+      emscripten_fetch_close(fetch);                                            // free data associated with the fetch
     };
     attr.onerror = [](emscripten_fetch_t *fetch){
+      // TODO: free requestData here
       download_state = static_cast<readystate>(fetch->readyState);
       download_status = fetch->status;
       model_list_result = std::unexpected{std::string{fetch->data, static_cast<size_t>(fetch->numBytes)}};
+      emscripten_fetch_close(fetch);                                            // also free data on error
     };
     attr.onprogress = [](emscripten_fetch_t *fetch){
+      // note: enable EMSCRIPTEN_FETCH_STREAM_DATA to populate fetch->data progressively
       std::cout << "DEBUG onprogress: readyState " << magic_enum::enum_name(static_cast<readystate>(fetch->readyState)) << std::endl;
       std::cout << "DEBUG onprogress: status " << fetch->status << std::endl;
       if(fetch->totalBytes == 0) {
@@ -118,8 +129,18 @@ void gpt_interface::draw() {
   }
 
   try {
-    for(auto const &model : model_list_result.value()) {
-      ImGui::TextUnformatted(("Model: " + model).c_str());
+    auto const &model_list{model_list_result.value()};
+    if(!model_list.empty()) {
+      if(ImGui::BeginCombo("Model", (model_selected == model_list.end() ? "Select..."s : *model_selected).c_str())) {
+        for(auto it{model_list.begin()}; it != model_list.end(); ++it) {
+          bool const is_selected{it == model_selected};
+          if(ImGui::Selectable(it->c_str(), is_selected)) {
+            model_selected = it;
+          }
+          if(is_selected) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+      }
     }
   } catch(std::bad_expected_access<std::string> const &e) {
     ImGui::TextUnformatted(("Error: Failed to fetch model list: " + e.error()).c_str());
