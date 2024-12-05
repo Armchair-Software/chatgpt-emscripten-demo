@@ -26,8 +26,8 @@ void gpt_interface::draw() {
 
   static readystate download_state{};
   static unsigned short download_status{};
-  static size_t download_bytes_done{0};
-  static std::optional<size_t> download_bytes_total{};
+  static uint64_t download_bytes_done{0};
+  static std::optional<uint64_t> download_bytes_total{};
 
   static std::expected<std::vector<std::string>, std::string> model_list_result;
 
