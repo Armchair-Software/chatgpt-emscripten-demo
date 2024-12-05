@@ -1,15 +1,16 @@
-# WebGPU Emscripten demo 3 for the Armchair Engine
+# ChatGPT Emscripten WebGPU demo for the Armchair Engine
 
-This is part two of a simple proof of concept, a minimal 3D engine written in C++, compiled to WASM with Emscripten.  Running in the browser, rendering with WebGPU.
+This demo integrates with OpenAI's completions API (i.e. ChatGPT) using Emscripten's fetch mechanism in the browser, providing a simple interface with [Dear Imgui](https://github.com/ocornut/imgui).
+
+This is part four of a simple proof of concept, a minimal 3D engine written in C++, compiled to WASM with Emscripten.  Running in the browser, rendering with WebGPU.
 
 For the previous demos, see:
 - https://github.com/Armchair-Software/webgpu-demo
 - https://github.com/Armchair-Software/webgpu-demo2
-
-Differences: TODO
+- https://github.com/Armchair-Software/webgpu-demo3 (may be private to this org)
 
 ## Live demo
-Live demo: https://armchair-software.github.io/webgpu-demo3/
+Live demo: https://armchair-software.github.io/chatgpt-emscripten-demo/
 
 This requires Firefox Nightly, or a recent version of Chrome or Chromium, with webgpu and Vulkan support explicitly enabled.
 
@@ -22,7 +23,7 @@ This requires Firefox Nightly, or a recent version of Chrome or Chromium, with w
 - [dear imgui](https://github.com/ocornut/imgui) with the proposed `imgui_impl_emscripten` backend (included)
 
 ## Building
-The easiest way to assemble everything (including in-tree shader resource assembly) is to use the included build script:
+The easiest way to assemble everything is to use the included build script:
 ```sh
 ./build.sh
 ```
