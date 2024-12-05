@@ -162,10 +162,10 @@ void gpt_interface::draw() {
       }
 
       if(model_selected != model_list.end()) {
-
         int imgui_id{0};
         for(auto &message : messages) {
           ImGui::PushID(++imgui_id);
+          ImGui::Separator();
           if(ImGui::BeginCombo("Role", std::string{magic_enum::enum_name(message.role)}.c_str())) {
             for(auto const &[this_role, role_name] : magic_enum::enum_entries<message_type::roles>()) {
               bool const is_selected{this_role == message.role};
