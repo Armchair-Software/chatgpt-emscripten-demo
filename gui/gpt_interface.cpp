@@ -182,6 +182,9 @@ void gpt_interface::draw() {
           ImGui::InputTextMultiline("Message", &message.text);
           ImGui::PopID();
         }
+        if(ImGui::Button("Call")) {
+          // TODO: submit button
+        }
       }
     }
   } catch(std::bad_expected_access<std::string> const &e) {
