@@ -1,9 +1,5 @@
 #!/bin/bash
 
-compiled_resources=(
-  render/shaders/*.wgsl
-)
-
 # redirect all stdout to stderr
 exec 1>&2
 
@@ -33,24 +29,6 @@ if [ ! -d "$build_dir" ]; then
   mkdir "$build_dir"
 fi
 
-# validate shaders
-if ! [ -z "$(which naga)" ]; then
-  echo "Validating shaders with naga-cli"
-  naga --bulk-validate render/shaders/*.wgsl || exit 1
-fi
-
-# compile resources
-compiled_resources_total=0
-compiled_resources_up_to_date=0
-for file in "${compiled_resources[@]}"; do
-  ((++compiled_resources_total))
-  result=$(./compile_resource_to_raw_string.sh "$file")
-  if grep -Fq "up to date" <<< "$result"; then
-    ((++compiled_resources_up_to_date))
-  fi
-done
-echo "Compiled resources: $((compiled_resources_total - compiled_resources_up_to_date)) updated, $compiled_resources_up_to_date up to date ($compiled_resources_total total)"
-
 cd "$build_dir"
 
 ccache="$(which ccache)"
@@ -68,7 +46,4 @@ echo "Running make..."
 #emmake make -j"$procs" VERBOSE=1 "$target" || exit 1
 emmake make -j"$procs" "$target" || exit 1
 
-#echo "Assembling resources..."
-#cd ..
-#rsync -ar --progress "resources/"* "$build_dir/"
 echo "Done."
