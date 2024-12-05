@@ -43,28 +43,22 @@ void gpt_interface::draw() {
   ImGui::TextUnformatted(("Last download status: " + std::to_string(download_status)).c_str());
 
   if(ImGui::Button("Request list of models")) {
-    // https://api.openai.com/v1/models -H "Authorization: Bearer $OPENAI_API_KEY"
-
     std::vector<std::string> headers{
-      "Authorization: Bearer " + api_key,
+      "Authorization", "Bearer " + api_key,
     };
 
-    ///std::vector<const char*> c_headers;
-    ///c_headers.reserve(headers.size() + 1);
-    ///for(auto const &header : headers) {
-    ///  c_headers.emplace_back(header.c_str());                                   // build an array of C strings
-    ///}
-    ///c_headers.emplace_back(nullptr);                                            // terminating null
-
+    std::vector<const char*> c_headers;
+    c_headers.reserve(headers.size() + 1);
+    for(auto const &header : headers) {
+      c_headers.emplace_back(header.c_str());                                   // build an array of C strings
+    }
+    c_headers.emplace_back(nullptr);                                            // terminating null
 
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
     std::strcpy(attr.requestMethod, "GET");
     attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_REPLACE; // using REPLACE without PERSIST_FILE skips querying IndexedDB
-    std::string header_auth{"Bearer " + api_key};
-    const char* c_headers[] = {"Authorization", header_auth.c_str(), nullptr};
-    //attr.requestHeaders = c_headers.data();
-    attr.requestHeaders = c_headers;
+    attr.requestHeaders = c_headers.data();
     attr.userData = this;
     attr.onsuccess = [](emscripten_fetch_t *fetch){
       std::cout << "DEBUG onsuccess start" << std::endl;
