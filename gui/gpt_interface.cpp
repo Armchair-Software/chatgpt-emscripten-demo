@@ -65,6 +65,9 @@ void gpt_interface::draw() {
   ImGui::TextUnformatted(("Last download status: " + std::to_string(download_status)).c_str());
 
   if(ImGui::Button("Request list of models")) {
+    model_list_result = {};
+    download_state = readystate::opened;
+
     std::vector<std::string> headers{
       "Authorization", "Bearer " + api_key,
     };
