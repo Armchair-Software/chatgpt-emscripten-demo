@@ -2210,7 +2210,7 @@ void ImFormatStringToTempBufferV(const char** out_buf, const char** out_buf_end,
     }
 }
 
-#ifndef IMGUI_ENABLE_SSE4_2
+#if (!defined(IMGUI_ENABLE_SSE4_2)) || defined(EMSCRIPTEN)
 // CRC32 needs a 1KB lookup table (not cache friendly)
 // Although the code to generate the table is simple and shorter than the table itself, using a const table allows us to easily:
 // - avoid an unnecessary branch/memory tap, - keep the ImHashXXX functions usable by static constructors, - make it thread-safe.
@@ -2244,7 +2244,8 @@ ImGuiID ImHashData(const void* data_p, size_t data_size, ImGuiID seed)
     ImU32 crc = ~seed;
     const unsigned char* data = (const unsigned char*)data_p;
     const unsigned char *data_end = (const unsigned char*)data_p + data_size;
-#ifndef IMGUI_ENABLE_SSE4_2
+#if (!defined(IMGUI_ENABLE_SSE4_2)) || defined(EMSCRIPTEN)
+// _mm_crc32_u32 is not available on Emscripten: https://emscripten.org/docs/porting/simd.html#id11
     const ImU32* crc32_lut = GCrc32LookupTable;
     while (data < data_end)
         crc = (crc >> 8) ^ crc32_lut[(crc & 0xFF) ^ *data++];
@@ -2272,7 +2273,7 @@ ImGuiID ImHashStr(const char* data_p, size_t data_size, ImGuiID seed)
     seed = ~seed;
     ImU32 crc = seed;
     const unsigned char* data = (const unsigned char*)data_p;
-#ifndef IMGUI_ENABLE_SSE4_2
+#if (!defined(IMGUI_ENABLE_SSE4_2)) || defined(EMSCRIPTEN)
     const ImU32* crc32_lut = GCrc32LookupTable;
 #endif
     if (data_size != 0)
@@ -2282,7 +2283,8 @@ ImGuiID ImHashStr(const char* data_p, size_t data_size, ImGuiID seed)
             unsigned char c = *data++;
             if (c == '#' && data_size >= 2 && data[0] == '#' && data[1] == '#')
                 crc = seed;
-#ifndef IMGUI_ENABLE_SSE4_2
+#if (!defined(IMGUI_ENABLE_SSE4_2)) || defined(EMSCRIPTEN)
+// _mm_crc32_u8 is not available on Emscripten
             crc = (crc >> 8) ^ crc32_lut[(crc & 0xFF) ^ c];
 #else
             crc = _mm_crc32_u8(crc, c);
@@ -2295,7 +2297,8 @@ ImGuiID ImHashStr(const char* data_p, size_t data_size, ImGuiID seed)
         {
             if (c == '#' && data[0] == '#' && data[1] == '#')
                 crc = seed;
-#ifndef IMGUI_ENABLE_SSE4_2
+#if (!defined(IMGUI_ENABLE_SSE4_2)) || defined(EMSCRIPTEN)
+// _mm_crc32_u8 is not available on Emscripten
             crc = (crc >> 8) ^ crc32_lut[(crc & 0xFF) ^ c];
 #else
             crc = _mm_crc32_u8(crc, c);
