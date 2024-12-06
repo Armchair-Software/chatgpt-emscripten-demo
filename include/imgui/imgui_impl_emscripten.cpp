@@ -480,7 +480,7 @@ void ImGui_ImplEmscripten_Init() {
     EMSCRIPTEN_EVENT_TARGET_WINDOW,                                             // target
     nullptr,                                                                    // userData
     false,                                                                      // useCapture
-    [](int /*event_type*/, EmscriptenUiEvent const *event, void */*data*/) {   // event_type == EMSCRIPTEN_EVENT_RESIZE
+    [](int /*event_type*/, EmscriptenUiEvent const *event, void */*data*/) {    // event_type == EMSCRIPTEN_EVENT_RESIZE
       auto &imgui_io{ImGui::GetIO()};
       imgui_io.DisplaySize.x = static_cast<float>(event->windowInnerWidth);
       imgui_io.DisplaySize.y = static_cast<float>(event->windowInnerHeight);
