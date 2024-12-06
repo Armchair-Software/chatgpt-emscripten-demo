@@ -32,7 +32,6 @@ private:
 
   struct window_data {
     vec2ui viewport_size;                                                       // our idea of the size of the viewport we render to, in real pixels
-    float device_pixel_ratio{1.0f};
   } window;
 
   std::function<void(webgpu_data const&)> postinit_callback;                    // the callback that is called once when init completes (it cannot return normally because of emscripten's loop mechanism)

@@ -48,9 +48,7 @@ webgpu_renderer::webgpu_renderer(logstorm::manager &this_logger)
   // find out about the initial canvas size and the current window and doc sizes
   window.viewport_size.assign(emscripten::val::global("window")["innerWidth"].as<unsigned int>(),
                               emscripten::val::global("window")["innerHeight"].as<unsigned int>());
-  window.device_pixel_ratio = emscripten::val::global("window")["devicePixelRatio"].as<float>(); // query device pixel ratio using JS
-  logger << "WebGPU: Viewport size: " << window.viewport_size << " (device pixels: approx " << static_cast<vec2f>(window.viewport_size) * window.device_pixel_ratio << ")";
-  logger << "WebGPU: Device pixel ratio: " << window.device_pixel_ratio << " canvas pixels to 1 device pixel (" << static_cast<unsigned int>(std::round(100.0f * window.device_pixel_ratio)) << "% zoom)";
+  logger << "WebGPU: Viewport size: " << window.viewport_size;
 
   // create a surface
   {
