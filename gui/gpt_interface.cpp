@@ -18,6 +18,7 @@ enum class readystate : unsigned short {                                        
   loading,
   done,
 };
+// TODO: move into download or whatever, rename
 
 struct message_type {
   enum class roles {
@@ -28,6 +29,149 @@ struct message_type {
   std::string text{};
 };
 
+struct testobj {
+  testobj() {
+    std::cout << "DEBUG: testobj constructed" << std::endl;
+  }
+  ~testobj() {
+    std::cout << "DEBUG: testobj destroyed" << std::endl;
+  }
+};
+
+
+class emscripten_fetch_manager {
+public:
+  struct request_params {
+    /// Parameters for a fetch request
+    std::string method{"GET"};
+    std::string const &url{};
+    std::vector<std::string> headers{};
+    std::string body{};
+    std::function<void(unsigned short status, std::string_view data)> on_success; // on_success callback is usually expected
+    std::function<void(unsigned short status, std::string_view status_text, std::string_view data)> on_error{};
+    uint32_t attributes{EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_REPLACE}; // using REPLACE without PERSIST_FILE skips querying IndexedDB
+  };
+
+  using request_id = uint32_t;
+
+  struct request {
+    /// Status of an ongoing request
+    std::unique_ptr<std::string const> const data;                              // the body of the request we sent (must be preserved until fetch completes)
+    std::function<void(unsigned short status, std::string_view data)> callback_success;
+    std::function<void(unsigned short status, std::string_view status_text, std::string_view data)> callback_error;
+
+  public:
+    readystate state{readystate::opened};                                       // current state of the request - considered opened as soon as the request is created
+    unsigned short status{0};                                                   // HTTP status of the request while in progress (200, 404, etc)
+    uint64_t bytes_done{0};
+    std::optional<uint64_t> bytes_total{};
+
+    request(std::unique_ptr<std::string const> &&data,
+            std::function<void(unsigned short status, std::string_view data)> &&callback_success,
+            std::function<void(unsigned short status, std::string_view status_text, std::string_view data)> &&callback_error);
+  };
+  std::unordered_map<request_id, request> requests;
+
+public:
+  request_id fetch(request_params params);
+};
+
+emscripten_fetch_manager::request::request(std::unique_ptr<std::string const> &&this_data,
+                                           std::function<void(unsigned short status, std::string_view data)> &&this_callback_success,
+                                           std::function<void(unsigned short status, std::string_view status_text, std::string_view data)> &&this_callback_error)
+  : data(std::move(this_data)),
+    callback_success(std::move(this_callback_success)),
+    callback_error(std::move(this_callback_error)) {
+}
+
+emscripten_fetch_manager::request_id emscripten_fetch_manager::fetch(request_params params) {
+  /// Request to download a resource to memory with the specified parameters
+  std::vector<const char*> c_headers;
+  c_headers.reserve(params.headers.size() + 1);
+  for(auto const &header : params.headers) {
+    c_headers.emplace_back(header.c_str());                                     // build an array of C strings
+  }
+  c_headers.emplace_back(nullptr);                                              // terminating null
+
+  auto request_data{std::make_unique<std::string>(std::move(params.body))};
+
+  emscripten_fetch_attr_t attr;
+  emscripten_fetch_attr_init(&attr);
+  std::strcpy(attr.requestMethod, params.method.c_str());
+  attr.attributes = params.attributes;
+  attr.requestHeaders = c_headers.data();
+  attr.requestData = request_data->data();
+  attr.requestDataSize = request_data->size();
+  attr.userData = this;
+  attr.onsuccess = [](emscripten_fetch_t *fetch){
+    /// Success callback
+    auto &manager{*static_cast<emscripten_fetch_manager*>(fetch->userData)};
+    auto &request{manager.requests.at(fetch->id)};
+    request.state = static_cast<readystate>(fetch->readyState);
+    request.status = fetch->status;
+
+    request.callback_success(fetch->status, {fetch->data, static_cast<size_t>(fetch->numBytes)});
+
+    manager.requests.erase(fetch->id);
+    emscripten_fetch_close(fetch);                                              // free data associated with the fetch
+  };
+  attr.onerror = [](emscripten_fetch_t *fetch){
+    /// Error callback
+    auto &manager{*static_cast<emscripten_fetch_manager*>(fetch->userData)};
+    auto &request{manager.requests.at(fetch->id)};
+
+    request.state = static_cast<readystate>(fetch->readyState);
+    request.status = fetch->status;
+
+    request.callback_error(fetch->status, fetch->statusText, {fetch->data, static_cast<size_t>(fetch->numBytes)});
+
+    manager.requests.erase(fetch->id);
+    emscripten_fetch_close(fetch);                                              // also free data on error
+  };
+  attr.onprogress = [](emscripten_fetch_t *fetch){
+    /// Progress updated callback
+    // note: enable EMSCRIPTEN_FETCH_STREAM_DATA to populate fetch->data progressively
+    auto &manager{*static_cast<emscripten_fetch_manager*>(fetch->userData)};
+    auto &request{manager.requests.at(fetch->id)};
+    request.state = static_cast<readystate>(fetch->readyState);
+    request.status = fetch->status;
+
+    if(fetch->totalBytes == 0) {
+      request.bytes_done = fetch->dataOffset + fetch->numBytes;
+      request.bytes_total = {};
+    } else {
+      request.bytes_done = fetch->dataOffset;
+      request.bytes_total = fetch->totalBytes;
+    }
+  };
+  attr.onreadystatechange = [](emscripten_fetch_t *fetch){
+    /// Download state updated callback
+    auto &manager{*static_cast<emscripten_fetch_manager*>(fetch->userData)};
+    auto &request{manager.requests.at(fetch->id)};
+    request.state = static_cast<readystate>(fetch->readyState);
+    request.status = fetch->status;
+  };
+
+  auto id{emscripten_fetch(&attr, params.url.c_str())->id};
+
+  requests.emplace(
+    std::piecewise_construct,
+    std::forward_as_tuple(id),
+    std::forward_as_tuple(
+      std::move(request_data),
+      std::move(params.on_success),
+      std::move(params.on_error)
+    )
+  );
+  return id;
+}
+
+
+
+
+
+
+
 void gpt_interface::draw() {
   /// Draw the interface window
   if(!ImGui::Begin("Chat")) {
@@ -35,10 +179,13 @@ void gpt_interface::draw() {
     return;
   }
 
-  static readystate download_state{};
-  static unsigned short download_status{};
-  static uint64_t download_bytes_done{0};
-  static std::optional<uint64_t> download_bytes_total{};
+
+  static emscripten_fetch_manager fetcher;
+
+  ///static readystate download_state{};
+  ///static unsigned short download_status{};
+  ///static uint64_t download_bytes_done{0};
+  ///static std::optional<uint64_t> download_bytes_total{};
 
   static std::expected<std::vector<std::string>, std::string> model_list_result;
   static std::vector<std::string const>::iterator model_selected{model_list_result->end()};
@@ -56,98 +203,31 @@ void gpt_interface::draw() {
   ImGui::InputText("OpenAI API key", &api_key);
   // TODO: accept paste
 
-  ImGui::TextUnformatted(("Download state: " + std::string{magic_enum::enum_name(download_state)}).c_str());
-  if(download_bytes_total.has_value()) {                                        // we have a total, so display percent
-    ImGui::TextUnformatted(("Download amount: " + std::to_string(download_bytes_done * 100 / *download_bytes_total) + "%").c_str());
-  } else {                                                                      // total unknown, so can't display a percent
-    ImGui::TextUnformatted(("Download amount: " + std::to_string(download_bytes_done) + " bytes").c_str());
-  }
-  ImGui::TextUnformatted(("Last download status: " + std::to_string(download_status)).c_str());
-
   if(ImGui::Button("Request list of models")) {
     model_list_result = {};
-    download_state = readystate::opened;
 
-    std::vector<std::string> headers{
-      "Authorization", "Bearer " + api_key,
-    };
-
-    std::vector<const char*> c_headers;
-    c_headers.reserve(headers.size() + 1);
-    for(auto const &header : headers) {
-      c_headers.emplace_back(header.c_str());                                   // build an array of C strings
-    }
-    c_headers.emplace_back(nullptr);                                            // terminating null
-
-    emscripten_fetch_attr_t attr;
-    emscripten_fetch_attr_init(&attr);
-    std::strcpy(attr.requestMethod, "GET");
-    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_REPLACE; // using REPLACE without PERSIST_FILE skips querying IndexedDB
-    attr.requestHeaders = c_headers.data();
-    ///attr.requestData = nullptr;
-    attr.userData = this;
-    attr.onsuccess = [](emscripten_fetch_t *fetch){
-      // TODO: free requestData here
-      std::cout << "DEBUG onsuccess start" << std::endl;
-      std::cout << "DEBUG onsuccess: id " << fetch->id << std::endl;
-      std::cout << "DEBUG onsuccess: userData " << fetch->userData << std::endl;
-      std::cout << "DEBUG onsuccess: url " << (fetch->url ? fetch->url : "null") << std::endl;
-      //std::cout << "DEBUG onsuccess: data " << (fetch->data ? fetch->data : "null") << std::endl;
-      //std::cout << "DEBUG onsuccess: numBytes " << fetch->numBytes << std::endl;
-      std::cout << "DEBUG onsuccess: dataOffset " << fetch->dataOffset << std::endl;
-      std::cout << "DEBUG onsuccess: totalBytes " << fetch->totalBytes << std::endl;
-      std::cout << "DEBUG onsuccess: readyState " << magic_enum::enum_name(static_cast<readystate>(fetch->readyState)) << std::endl;
-      std::cout << "DEBUG onsuccess: status " << fetch->status << std::endl;
-      std::cout << "DEBUG onsuccess: statusText " << fetch->statusText << std::endl;
-      download_state = static_cast<readystate>(fetch->readyState);
-      download_status = fetch->status;
-
-      model_list_result = {};
-      try {
-        std::string_view const json_view{fetch->data, static_cast<size_t>(fetch->numBytes)};
-        nlohmann::ordered_json const json = nlohmann::ordered_json::parse(json_view); // preserve element order when parsing
-        for(auto const &model : json.at("data")) {
-          model_list_result->emplace_back(model.at("id"));
+    fetcher.fetch({
+      .url{"https://api.openai.com/v1/models"},
+      .headers{
+        "Authorization", "Bearer " + api_key,
+      },
+      .on_success{[](unsigned short status, std::string_view data){
+        model_list_result = {};
+        try {
+          nlohmann::ordered_json const json = nlohmann::ordered_json::parse(data); // preserve element order when parsing
+          for(auto const &model : json.at("data")) {
+            model_list_result->emplace_back(model.at("id"));
+          }
+        } catch(std::exception const &e) {
+          model_list_result = std::unexpected{std::string{"Failed to parse model list: "} + e.what()};
         }
-      } catch(std::exception const &e) {
-        model_list_result = std::unexpected{std::string{"Failed to parse model list: "} + e.what()};
-      }
-      std::sort(model_list_result->begin(), model_list_result->end());
-      model_selected = model_list_result->end();
-
-      emscripten_fetch_close(fetch);                                            // free data associated with the fetch
-    };
-    attr.onerror = [](emscripten_fetch_t *fetch){
-      // TODO: free requestData here
-      download_state = static_cast<readystate>(fetch->readyState);
-      download_status = fetch->status;
-      model_list_result = std::unexpected{std::string{fetch->data, static_cast<size_t>(fetch->numBytes)}};
-      emscripten_fetch_close(fetch);                                            // also free data on error
-    };
-    attr.onprogress = [](emscripten_fetch_t *fetch){
-      // note: enable EMSCRIPTEN_FETCH_STREAM_DATA to populate fetch->data progressively
-      std::cout << "DEBUG onprogress: readyState " << magic_enum::enum_name(static_cast<readystate>(fetch->readyState)) << std::endl;
-      std::cout << "DEBUG onprogress: status " << fetch->status << std::endl;
-      if(fetch->totalBytes == 0) {
-        download_bytes_done = fetch->dataOffset + fetch->numBytes;
-        download_bytes_total = {};
-      } else {
-        download_bytes_done = fetch->dataOffset;
-        download_bytes_total = fetch->totalBytes;
-      }
-
-      download_state = static_cast<readystate>(fetch->readyState);
-      download_status = fetch->status;
-    };
-    attr.onreadystatechange = [](emscripten_fetch_t *fetch){
-      std::cout << "DEBUG onreadystatechange: readyState " << magic_enum::enum_name(static_cast<readystate>(fetch->readyState)) << std::endl;
-      std::cout << "DEBUG onreadystatechange: status " << fetch->status << std::endl;
-      download_state = static_cast<readystate>(fetch->readyState);
-      download_status = fetch->status;
-    };
-
-    emscripten_fetch_t *fetch{emscripten_fetch(&attr, "https://api.openai.com/v1/models")};
-    std::cout << "DEBUG result: id " << fetch->id << std::endl;
+        std::sort(model_list_result->begin(), model_list_result->end());
+        model_selected = model_list_result->end();
+      }},
+      .on_error{[](unsigned short status, std::string_view status_text, std::string_view data){
+        model_list_result = std::unexpected{std::string{status_text} + ": " + std::string{data}};
+      }},
+    });
   }
 
   try {
