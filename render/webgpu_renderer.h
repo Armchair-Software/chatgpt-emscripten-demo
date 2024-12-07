@@ -1,6 +1,5 @@
 #pragma once
 
-//#include <emscripten/em_types.h>
 #include <webgpu/webgpu_cpp.h>
 #include "logstorm/logstorm_forward.h"
 #include "vectorstorm/vector/vector2.h"
