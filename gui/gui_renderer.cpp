@@ -36,7 +36,7 @@ void gui_renderer::draw() {
 
   gpt.draw();
 
-  ImGui::ShowDemoWindow();
+  //ImGui::ShowDemoWindow();
 
   ImGui::Render();                                                              // finalise draw data (actual rendering of draw data is done by the renderer later)
 }
