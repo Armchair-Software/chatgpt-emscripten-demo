@@ -11,15 +11,6 @@ using namespace std::string_literals;
 
 namespace gui {
 
-enum class readystate : unsigned short {                                        // from include/emscripten/fetch.h
-  unsent,
-  opened,
-  headers_received,
-  loading,
-  done,
-};
-// TODO: move into download or whatever, rename
-
 struct message_type {
   enum class roles {
     system,
@@ -28,16 +19,6 @@ struct message_type {
   } role{roles::user};
   std::string text{};
 };
-
-struct testobj {
-  testobj() {
-    std::cout << "DEBUG: testobj constructed" << std::endl;
-  }
-  ~testobj() {
-    std::cout << "DEBUG: testobj destroyed" << std::endl;
-  }
-};
-
 
 class emscripten_fetch_manager {
 public:
@@ -61,7 +42,13 @@ public:
     std::function<void(unsigned short status, std::string_view status_text, std::string_view data)> callback_error;
 
   public:
-    readystate state{readystate::opened};                                       // current state of the request - considered opened as soon as the request is created
+    enum class ready_state : unsigned short {                                   // from include/emscripten/fetch.h
+      unsent,
+      opened,
+      headers_received,
+      loading,
+      done,
+    } state{ready_state::opened};                                               // current state of the request - considered opened as soon as the request is created
     unsigned short status{0};                                                   // HTTP status of the request while in progress (200, 404, etc)
     uint64_t bytes_done{0};
     std::optional<uint64_t> bytes_total{};
@@ -73,7 +60,7 @@ public:
   std::unordered_map<request_id, request> requests;
 
 public:
-  request_id fetch(request_params params);
+  request_id fetch(request_params &&params);
 };
 
 emscripten_fetch_manager::request::request(std::unique_ptr<std::string const> &&this_data,
@@ -84,7 +71,7 @@ emscripten_fetch_manager::request::request(std::unique_ptr<std::string const> &&
     callback_error(std::move(this_callback_error)) {
 }
 
-emscripten_fetch_manager::request_id emscripten_fetch_manager::fetch(request_params params) {
+emscripten_fetch_manager::request_id emscripten_fetch_manager::fetch(request_params &&params) {
   /// Request to download a resource to memory with the specified parameters
   std::vector<const char*> c_headers;
   c_headers.reserve(params.headers.size() + 1);
@@ -107,7 +94,7 @@ emscripten_fetch_manager::request_id emscripten_fetch_manager::fetch(request_par
     /// Success callback
     auto &manager{*static_cast<emscripten_fetch_manager*>(fetch->userData)};
     auto &request{manager.requests.at(fetch->id)};
-    request.state = static_cast<readystate>(fetch->readyState);
+    request.state = static_cast<request::ready_state>(fetch->readyState);
     request.status = fetch->status;
 
     request.callback_success(fetch->status, {fetch->data, static_cast<size_t>(fetch->numBytes)});
@@ -120,7 +107,7 @@ emscripten_fetch_manager::request_id emscripten_fetch_manager::fetch(request_par
     auto &manager{*static_cast<emscripten_fetch_manager*>(fetch->userData)};
     auto &request{manager.requests.at(fetch->id)};
 
-    request.state = static_cast<readystate>(fetch->readyState);
+    request.state = static_cast<request::ready_state>(fetch->readyState);
     request.status = fetch->status;
 
     request.callback_error(fetch->status, fetch->statusText, {fetch->data, static_cast<size_t>(fetch->numBytes)});
@@ -133,7 +120,7 @@ emscripten_fetch_manager::request_id emscripten_fetch_manager::fetch(request_par
     // note: enable EMSCRIPTEN_FETCH_STREAM_DATA to populate fetch->data progressively
     auto &manager{*static_cast<emscripten_fetch_manager*>(fetch->userData)};
     auto &request{manager.requests.at(fetch->id)};
-    request.state = static_cast<readystate>(fetch->readyState);
+    request.state = static_cast<request::ready_state>(fetch->readyState);
     request.status = fetch->status;
 
     if(fetch->totalBytes == 0) {
@@ -148,7 +135,7 @@ emscripten_fetch_manager::request_id emscripten_fetch_manager::fetch(request_par
     /// Download state updated callback
     auto &manager{*static_cast<emscripten_fetch_manager*>(fetch->userData)};
     auto &request{manager.requests.at(fetch->id)};
-    request.state = static_cast<readystate>(fetch->readyState);
+    request.state = static_cast<request::ready_state>(fetch->readyState);
     request.status = fetch->status;
   };
 
@@ -167,11 +154,6 @@ emscripten_fetch_manager::request_id emscripten_fetch_manager::fetch(request_par
 }
 
 
-
-
-
-
-
 void gpt_interface::draw() {
   /// Draw the interface window
   if(!ImGui::Begin("Chat")) {
@@ -181,11 +163,6 @@ void gpt_interface::draw() {
 
 
   static emscripten_fetch_manager fetcher;
-
-  ///static readystate download_state{};
-  ///static unsigned short download_status{};
-  ///static uint64_t download_bytes_done{0};
-  ///static std::optional<uint64_t> download_bytes_total{};
 
   static std::expected<std::vector<std::string>, std::string> model_list_result;
   static std::vector<std::string const>::iterator model_selected{model_list_result->end()};
@@ -263,7 +240,53 @@ void gpt_interface::draw() {
           ImGui::PopID();
         }
         if(ImGui::Button("Call")) {
-          // TODO: submit button
+          nlohmann::json request_json = {
+            {"model", "gpt-4o"},
+            {"response_format", {
+              {"type", "text"}
+            }},
+            {"temperature", 1},
+            {"max_tokens", 2048},
+            {"top_p", 1},
+            {"frequency_penalty", 0},
+            {"presence_penalty", 0},
+          };
+          for(auto const &message : messages) {
+            request_json["messages"].emplace_back(
+              nlohmann::json{
+                {"role", magic_enum::enum_name(message.role)},
+                {"content", {
+                  {
+                    {"type", "text"},
+                    {"text", message.text}
+                  }
+                }}
+              }
+            );
+          }
+
+          fetcher.fetch({
+            .method{"POST"},
+            .url{"https://api.openai.com/v1/chat/completions"},
+            .headers{
+              "Content-Type", "application/json",
+              "Authorization", "Bearer " + api_key,
+            },
+            .body{request_json.dump()},
+            .on_success{[](unsigned short status, std::string_view data){
+              nlohmann::json const json = nlohmann::ordered_json::parse(data);
+              messages.emplace_back(message_type{
+                .role{message_type::roles::assistant},
+                .text{json.at("choices").front().at("message").at("content")},
+              });
+              messages.emplace_back(message_type{
+                .role{message_type::roles::user},
+              });
+            }},
+            .on_error{[](unsigned short status, std::string_view status_text, std::string_view data){
+              std::cerr << "ERROR calling API: " << status << ": " << status_text << ", " << data << std::endl;
+            }},
+          });
         }
       }
     }
@@ -282,3 +305,42 @@ void gpt_interface::draw() {
 }
 
 }
+
+/**
+sample response:
+
+{
+  "id": "chatcmpl-AcZ8FxqQeZTY1oMIHmq39u5gJWl40",
+  "object": "chat.completion",
+  "created": 1733754875,
+  "model": "gpt-4o-2024-08-06",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "four",
+        "refusal": null
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 23,
+    "completion_tokens": 1,
+    "total_tokens": 24,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": "fp_9d50cd990b"
+}
+**/
