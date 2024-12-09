@@ -1,24 +1,13 @@
 #include <iostream>
-#include <expected>
 #include "gpt_interface.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_stdlib.h>
 #include <nlohmann/json.hpp>
 #include <magic_enum/magic_enum.hpp>
-#include "emscripten_fetch_manager.h"
 
 using namespace std::string_literals;
 
 namespace gui {
-
-struct message_type {
-  enum class roles {
-    system,
-    user,
-    assistant,
-  } role{roles::user};
-  std::string text{};
-};
 
 void gpt_interface::draw() {
   /// Draw the interface window
@@ -27,21 +16,6 @@ void gpt_interface::draw() {
     return;
   }
 
-
-  static emscripten_fetch_manager fetcher;
-
-  static std::expected<std::vector<std::string>, std::string> model_list_result;
-  static std::vector<std::string const>::iterator model_selected{model_list_result->end()};
-
-  static std::vector<message_type> messages{
-    {
-      .role{message_type::roles::system},
-      .text{"You are a helpful assistant..."},
-    },
-    {
-      .role{message_type::roles::user},
-    },
-  };
 
   ImGui::InputText("OpenAI API key", &api_key);
   // TODO: accept paste
@@ -54,7 +28,7 @@ void gpt_interface::draw() {
       .headers{
         "Authorization", "Bearer " + api_key,
       },
-      .on_success{[](unsigned short status, std::string_view data){
+      .on_success{[&](unsigned short status, std::string_view data){
         model_list_result = {};
         try {
           nlohmann::ordered_json const json = nlohmann::ordered_json::parse(data); // preserve element order when parsing
@@ -67,7 +41,7 @@ void gpt_interface::draw() {
         std::sort(model_list_result->begin(), model_list_result->end());
         model_selected = model_list_result->end();
       }},
-      .on_error{[](unsigned short status, std::string_view status_text, std::string_view data){
+      .on_error{[&](unsigned short status, std::string_view status_text, std::string_view data){
         model_list_result = std::unexpected{std::string{status_text} + ": " + std::string{data}};
       }},
     });
@@ -139,7 +113,7 @@ void gpt_interface::draw() {
               "Authorization", "Bearer " + api_key,
             },
             .body{request_json.dump()},
-            .on_success{[](unsigned short status, std::string_view data){
+            .on_success{[&](unsigned short status, std::string_view data){
               nlohmann::json const json = nlohmann::ordered_json::parse(data);
               messages.emplace_back(message_type{
                 .role{message_type::roles::assistant},
@@ -151,6 +125,7 @@ void gpt_interface::draw() {
             }},
             .on_error{[](unsigned short status, std::string_view status_text, std::string_view data){
               std::cerr << "ERROR calling API: " << status << ": " << status_text << ", " << data << std::endl;
+              // TODO: error message box in gui
             }},
           });
         }
