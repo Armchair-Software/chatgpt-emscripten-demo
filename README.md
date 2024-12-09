@@ -4,10 +4,14 @@ This demo integrates with OpenAI's completions API (i.e. ChatGPT) using Emscript
 
 This is part four of a simple proof of concept, a minimal 3D engine written in C++, compiled to WASM with Emscripten.  Running in the browser, rendering with WebGPU.
 
+You need to provide your own OpenAI API key.
+
 For the previous demos, see:
 - https://github.com/Armchair-Software/webgpu-demo
 - https://github.com/Armchair-Software/webgpu-demo2
 - https://github.com/Armchair-Software/webgpu-demo3 (may be private to this org)
+
+![image](https://github.com/user-attachments/assets/b037d8d2-e113-4be5-8553-f00be51ed1ad)
 
 ## Live demo
 Live demo: https://armchair-software.github.io/chatgpt-emscripten-demo/
