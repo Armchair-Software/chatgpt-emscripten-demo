@@ -21,6 +21,7 @@ This requires Firefox Nightly, or a recent version of Chrome or Chromium, with w
 ## Dependencies
 - [Emscripten](https://emscripten.org/)
 - CMake
+- [Emscripten Browser Clipboard](https://github.com/Armchair-Software/emscripten-browser-clipboard) (included)
 - [VectorStorm](https://github.com/Armchair-Software/vectorstorm) (included)
 - [LogStorm](https://github.com/VoxelStorm-Ltd/logstorm) (included)
 - [magic_enum](https://github.com/Neargye/magic_enum) (included)
