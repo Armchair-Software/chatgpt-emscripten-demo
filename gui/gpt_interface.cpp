@@ -11,14 +11,15 @@ namespace gui {
 
 void gpt_interface::draw() {
   /// Draw the interface window
-  if(!ImGui::Begin("Chat")) {
+  auto &imgui_io{ImGui::GetIO()};
+  if(!ImGui::Begin("Chat", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
     ImGui::End();
     return;
   }
+  ImGui::SetWindowPos({0.0f, 0.0f}, ImGuiCond_FirstUseEver);
+  ImGui::SetWindowSize(imgui_io.DisplaySize);
 
-
-  ImGui::InputText("OpenAI API key", &api_key);
-  // TODO: accept paste
+  ImGui::InputTextWithHint("API key", "Paste OpenAI API key here", &api_key, ImGuiInputTextFlags_Password);
 
   if(ImGui::Button("Request list of models")) {
     model_list_result = {};
