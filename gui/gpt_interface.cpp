@@ -44,6 +44,7 @@ void gpt_interface::draw() {
       .on_error{[&](unsigned short status, std::string_view status_text, std::string_view data){
         model_list_result = std::unexpected{std::string{status_text} + ": " + std::string{data}};
       }},
+      .attributes{EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_REPLACE},  // using REPLACE without PERSIST_FILE skips querying IndexedDB
     });
   }
 
@@ -127,6 +128,7 @@ void gpt_interface::draw() {
               std::cerr << "ERROR calling API: " << status << ": " << status_text << ", " << data << std::endl;
               // TODO: error message box in gui
             }},
+            .attributes{EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_REPLACE},
           });
         }
       }
