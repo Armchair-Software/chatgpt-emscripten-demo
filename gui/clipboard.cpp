@@ -4,7 +4,7 @@
 #include "emscripten_browser_clipboard.h"
 #include "secure_cleanse.h"
 
-#define DEBUG_CLIPBOARD
+//#define DEBUG_CLIPBOARD
 
 #ifdef NDEBUG
   // clipboard debugging must always be disabled in release builds for security
