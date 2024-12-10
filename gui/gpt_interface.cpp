@@ -11,13 +11,12 @@ namespace gui {
 
 void gpt_interface::draw() {
   /// Draw the interface window
-  auto &imgui_io{ImGui::GetIO()};
   if(!ImGui::Begin("Chat", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
     ImGui::End();
     return;
   }
   ImGui::SetWindowPos({0.0f, 0.0f}, ImGuiCond_FirstUseEver);
-  ImGui::SetWindowSize(imgui_io.DisplaySize);
+  ImGui::SetWindowSize(ImGui::GetIO().DisplaySize);
 
   ImGui::InputTextWithHint("API key", "Paste OpenAI API key here", &api_key, ImGuiInputTextFlags_Password);
 
