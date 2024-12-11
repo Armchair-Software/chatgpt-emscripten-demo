@@ -1,3 +1,5 @@
+[![CI Build](https://github.com/Armchair-Software/chatgpt-emscripten-demo/actions/workflows/ci-build.yml/badge.svg)](https://github.com/Armchair-Software/chatgpt-emscripten-demo/actions)
+
 # ChatGPT Emscripten WebGPU demo for the Armchair Engine
 
 This demo integrates with OpenAI's completions API (i.e. ChatGPT) using Emscripten's fetch mechanism in the browser, providing a simple interface with [Dear Imgui](https://github.com/ocornut/imgui).
