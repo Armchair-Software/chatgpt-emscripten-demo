@@ -28,7 +28,7 @@ void gpt_interface::draw() {
       .headers{
         "Authorization", "Bearer " + api_key,
       },
-      .on_success{[&](unsigned short status, std::string_view data){
+      .on_success{[&](unsigned short /*status*/, std::span<std::byte const> data){
         model_list_result = {};
         try {
           nlohmann::ordered_json const json = nlohmann::ordered_json::parse(data); // preserve element order when parsing
@@ -41,8 +41,8 @@ void gpt_interface::draw() {
         std::sort(model_list_result->begin(), model_list_result->end());
         model_selected = model_list_result->end();
       }},
-      .on_error{[&](unsigned short status, std::string_view status_text, std::string_view data){
-        model_list_result = std::unexpected{std::string{status_text} + ": " + std::string{data}};
+      .on_error{[&](unsigned short /*status*/, std::string_view status_text, std::span<std::byte const> data){
+        model_list_result = std::unexpected{std::string{status_text} + ": " + std::string{reinterpret_cast<char const*>(data.data()), data.size()}};
       }},
       .attributes{EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_REPLACE},  // using REPLACE without PERSIST_FILE skips querying IndexedDB
     });
@@ -114,7 +114,7 @@ void gpt_interface::draw() {
               "Authorization", "Bearer " + api_key,
             },
             .body{request_json.dump()},
-            .on_success{[&](unsigned short status, std::string_view data){
+            .on_success{[&](unsigned short /*status*/, std::span<std::byte const> data){
               nlohmann::json const json = nlohmann::ordered_json::parse(data);
               messages.emplace_back(message_type{
                 .role{message_type::roles::assistant},
@@ -124,8 +124,8 @@ void gpt_interface::draw() {
                 .role{message_type::roles::user},
               });
             }},
-            .on_error{[](unsigned short status, std::string_view status_text, std::string_view data){
-              std::cerr << "ERROR calling API: " << status << ": " << status_text << ", " << data << std::endl;
+            .on_error{[](unsigned short status, std::string_view status_text, std::span<std::byte const> data){
+              std::cerr << "ERROR calling API: " << status << ": " << status_text << ", " << std::string_view{reinterpret_cast<char const*>(data.data()), data.size()} << std::endl;
               // TODO: error message box in gui
             }},
             .attributes{EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_REPLACE},
