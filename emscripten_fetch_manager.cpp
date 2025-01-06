@@ -1,8 +1,8 @@
 #include "emscripten_fetch_manager.h"
 
 emscripten_fetch_manager::request::request(std::unique_ptr<std::string const> &&this_data,
-                                           std::function<void(unsigned short status, std::string_view data)> &&this_callback_success,
-                                           std::function<void(unsigned short status, std::string_view status_text, std::string_view data)> &&this_callback_error)
+                                           std::function<void(unsigned short status, std::span<std::byte const> data)> &&this_callback_success,
+                                           std::function<void(unsigned short status, std::string_view status_text, std::span<std::byte const> data)> &&this_callback_error)
   : data(std::move(this_data)),
     callback_success(std::move(this_callback_success)),
     callback_error(std::move(this_callback_error)) {
@@ -34,7 +34,7 @@ emscripten_fetch_manager::request_id emscripten_fetch_manager::fetch(request_par
     request.state = static_cast<request::ready_state>(fetch->readyState);
     request.status = fetch->status;
 
-    request.callback_success(fetch->status, {fetch->data, static_cast<size_t>(fetch->numBytes)});
+    request.callback_success(fetch->status, std::as_bytes(std::span{fetch->data, static_cast<size_t>(fetch->numBytes)}));
 
     manager.requests.erase(fetch->id);
     emscripten_fetch_close(fetch);                                              // free data associated with the fetch
@@ -47,7 +47,7 @@ emscripten_fetch_manager::request_id emscripten_fetch_manager::fetch(request_par
     request.state = static_cast<request::ready_state>(fetch->readyState);
     request.status = fetch->status;
 
-    request.callback_error(fetch->status, fetch->statusText, {fetch->data, static_cast<size_t>(fetch->numBytes)});
+    request.callback_error(fetch->status, fetch->statusText, std::as_bytes(std::span{fetch->data, static_cast<size_t>(fetch->numBytes)}));
 
     manager.requests.erase(fetch->id);
     emscripten_fetch_close(fetch);                                              // also free data on error
