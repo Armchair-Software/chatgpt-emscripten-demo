@@ -121,7 +121,6 @@ add_compile_definitions(
   BOOST_URL_DISABLE_THREADS
   IMGUI_IMPL_OPENGL_NO_RESTORE_STATE
   NO_BLOB_LOADER
-  LOGSTORM_SINGLE_THREADED
   ${opt_and_debug_compile_definitions}
   ${exception_compile_definitions}
 )
@@ -138,7 +137,7 @@ add_executable(client
   logstorm/log_line_helper.cpp
   logstorm/manager.cpp
   logstorm/sink/base.cpp
-  logstorm/sink/console.cpp
+  logstorm/sink/emscripten_out.cpp
   logstorm/timestamp.cpp
   # 3rd party libraries:
   include/imgui/imgui.cpp
