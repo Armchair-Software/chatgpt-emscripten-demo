@@ -29,8 +29,6 @@ if [ ! -d "$build_dir" ]; then
   mkdir "$build_dir"
 fi
 
-cd "$build_dir"
-
 ccache="$(which ccache)"
 if [ -n "$ccache" ]; then
   echo "CCache enabled"
