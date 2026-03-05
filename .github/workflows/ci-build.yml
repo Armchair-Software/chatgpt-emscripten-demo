@@ -106,6 +106,7 @@ jobs:
     needs: build-rel
     permissions:
       contents: read
+      actions: read
     steps:
     - uses: actions/checkout@v4
     - name: Setup Node toolchain
