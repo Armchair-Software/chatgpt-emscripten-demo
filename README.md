@@ -42,3 +42,7 @@ To launch a local server and bring up a browser:
 ```
 
 For manual builds with CMake, and to adjust how the example is run locally, inspect the `build.sh` and `run.sh` scripts.
+
+## Contributing
+
+See [style-guide.md](style-guide.md) for coding conventions used in this project.
