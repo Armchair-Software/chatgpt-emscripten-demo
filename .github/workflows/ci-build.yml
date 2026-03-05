@@ -107,6 +107,9 @@ jobs:
   build-electron-win32:
     runs-on: windows-latest
     needs: build-rel
+    permissions:
+      contents: read
+      actions: read
     steps:
     - uses: actions/checkout@v4
     - name: Setup Node toolchain
