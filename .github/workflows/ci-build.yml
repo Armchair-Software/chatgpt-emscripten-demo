@@ -76,6 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-rel
     permissions:
+      contents: read  # Restore workflow-level read access; job-level perms override, not extend, workflow-level
       pages: write  # Permissions needed to deploy to GitHub Pages
       id-token: write  # Permissions needed for OIDC authentication
     steps:
