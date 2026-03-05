@@ -1,5 +1,3 @@
-const { FusesPlugin } = require('@electron-forge/plugin-fuses');
-
 module.exports = {
   packagerConfig: {
     asar: true,
