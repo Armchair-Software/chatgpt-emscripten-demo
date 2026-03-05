@@ -1,5 +1,4 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
-const { FuseVersion } = require('@electron/fuses');
 
 module.exports = {
   packagerConfig: {
