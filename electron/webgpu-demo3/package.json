@@ -35,6 +35,18 @@
     "email": "slowriot@armchair.software"
   },
   "license": "MIT",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "overrides": {
+    "tar": "^7.5.10",
+    "webpack-dev-server": "^5.2.3",
+    "on-headers": "^1.1.0",
+    "qs": "^6.14.2",
+    "tmp": "^0.2.5",
+    "@tootallnate/once": "^3.0.1",
+    "brace-expansion": "^2.0.2"
+  },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",
     "path-to-regexp": "^0.1.12"
