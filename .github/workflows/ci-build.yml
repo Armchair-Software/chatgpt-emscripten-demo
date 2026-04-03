@@ -2,15 +2,13 @@ name: CI build
 
 permissions:
   contents: read
+  actions: write
 
 on:
   push:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
-
-permissions:
-  contents: read
 
 jobs:
   build:
@@ -38,6 +36,10 @@ jobs:
 
   build-rel:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+      pages: write
     env:
       EMSCRIPTEN_VERSION: 3.1.71
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
