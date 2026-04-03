@@ -2,6 +2,8 @@ name: CI build
 
 permissions:
   contents: read
+  actions: write
+  pages: write
 
 on:
   push:
