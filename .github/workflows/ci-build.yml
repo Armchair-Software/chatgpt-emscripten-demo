@@ -1,6 +1,7 @@
 name: CI build
 
 permissions:
+  actions: write
   contents: read
 
 on:
