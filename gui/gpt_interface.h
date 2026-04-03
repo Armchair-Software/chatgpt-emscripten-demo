@@ -21,7 +21,7 @@ class gpt_interface {
   emscripten_fetch_manager fetcher;
 
   std::expected<std::vector<std::string>, std::string> model_list_result;
-  std::vector<std::string const>::iterator model_selected{model_list_result->end()};
+  std::vector<std::string>::const_iterator model_selected{model_list_result->end()};
 
   std::vector<message_type> messages{
     {
