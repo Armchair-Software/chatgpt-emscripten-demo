@@ -24,7 +24,7 @@ jobs:
         path: ${{ runner.temp }}/${{ github.run_id }}/emsdk-main
         key: ${{ runner.os }}-emsdk-${{ env.EMSCRIPTEN_VERSION }}-debug
     - name: Setup Emscripten toolchain
-      uses: mymindstorm/setup-emsdk@v14
+      uses: slowriot/setup-emsdk@v15
       with:
         version: ${{ env.EMSCRIPTEN_VERSION }}
     - name: Build
@@ -47,7 +47,7 @@ jobs:
         path: ${{ runner.temp }}/${{ github.run_id }}/emsdk-main
         key: ${{ runner.os }}-emsdk-${{ env.EMSCRIPTEN_VERSION }}-rel
     - name: Setup Emscripten toolchain
-      uses: mymindstorm/setup-emsdk@v14
+      uses: slowriot/setup-emsdk@v15
       with:
         version: ${{ env.EMSCRIPTEN_VERSION }}
     - name: build-rel
