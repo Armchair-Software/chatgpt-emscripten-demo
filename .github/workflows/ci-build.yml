@@ -21,7 +21,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: ccache
-      uses: hendrikmuhs/ccache-action@v1.2.22
+      uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ runner.os }}-ccache-${{ env.EMSCRIPTEN_VERSION }}-debug
     - name: Emscripten cache
@@ -47,7 +47,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: ccache
-      uses: hendrikmuhs/ccache-action@v1.2.22
+      uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ runner.os }}-ccache-${{ env.EMSCRIPTEN_VERSION }}-rel
     - name: Emscripten cache
