@@ -19,13 +19,13 @@ jobs:
     env:
       EMSCRIPTEN_VERSION: 4.0.10
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: ccache
       uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ runner.os }}-ccache-${{ env.EMSCRIPTEN_VERSION }}-debug
     - name: Emscripten cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ${{ runner.temp }}/${{ github.run_id }}/emsdk-main
         key: ${{ runner.os }}-emsdk-${{ env.EMSCRIPTEN_VERSION }}-debug
@@ -45,13 +45,13 @@ jobs:
     env:
       EMSCRIPTEN_VERSION: 4.0.10
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: ccache
       uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ runner.os }}-ccache-${{ env.EMSCRIPTEN_VERSION }}-rel
     - name: Emscripten cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ${{ runner.temp }}/${{ github.run_id }}/emsdk-main
         key: ${{ runner.os }}-emsdk-${{ env.EMSCRIPTEN_VERSION }}-rel
@@ -90,9 +90,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-rel
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Setup Node toolchain
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@v7
       with:
         node-version: 22
     - name: Download artifacts from build-rel
@@ -115,9 +115,9 @@ jobs:
     runs-on: windows-latest
     needs: build-rel
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Setup Node toolchain
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@v7
       with:
         node-version: 22
     - name: Download artifacts from build-rel
@@ -141,9 +141,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-rel
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Setup Node toolchain
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@v7
       with:
         node-version: 22
     - name: Download artifacts from build-rel
