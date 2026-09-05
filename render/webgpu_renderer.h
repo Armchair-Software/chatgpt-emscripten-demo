@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <webgpu/webgpu_cpp.h>
 #include "logstorm/logstorm_forward.h"
 #include "vectorstorm/vector/vector2.h"
@@ -16,8 +17,6 @@ public:
     wgpu::Adapter adapter;                                                      // WebGPU adapter once it has been acquired
     wgpu::Device device;                                                        // WebGPU device once it has been acquired
     wgpu::Queue queue;                                                          // the queue for this device, once it has been acquired
-
-    wgpu::SwapChain swapchain;                                                  // the swapchain providing a texture view to render to
 
     wgpu::TextureFormat surface_preferred_format{wgpu::TextureFormat::Undefined}; // preferred texture format for this surface
 
@@ -42,7 +41,8 @@ public:
   void init(std::function<void(webgpu_data const&)> &&postinit_callback, std::function<void()> &&main_loop_callback);
 
 private:
-  void init_swapchain();
+  bool update_viewport_size();
+  void configure_surface();
 
   void wait_to_configure_loop();
   void configure();
