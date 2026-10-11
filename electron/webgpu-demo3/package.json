@@ -3,7 +3,7 @@
   "productName": "webgpu-demo",
   "version": "3.0.0",
   "description": "Armchair WebGPU Demo 3",
-  "main": ".webpack/main",
+  "main": ".webpack/main/index.cjs",
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
