@@ -95,7 +95,7 @@ jobs:
         cp build_rel/client.* deploy/
         mv deploy/client.html deploy/index.html
     - name: Upload files for later stages
-      uses: actions/upload-artifact@v7.0.1
+      uses: actions/upload-artifact@v7.0.2
       with:
         name: build-rel-artifacts
         path: ./deploy
@@ -188,7 +188,7 @@ jobs:
         npm install
         npm run make -- --platform darwin --arch arm64
     - name: Upload macOS packages
-      uses: actions/upload-artifact@v7.0.1
+      uses: actions/upload-artifact@v7.0.2
       with:
         name: electron-darwin-arm64
         path: electron/webgpu-demo3/out/make/
